@@ -151,12 +151,13 @@ export default function Review() {
 
   const handleFinalReview = () => {
     if (!order || !patientId || !user) return;
-    if (!isAllFollowUpCompleted() || followUpItems.length === 0) {
-      showToast('error', '请先完成所有追问项');
+    if (followUpItems.length > 0 && !isAllFollowUpCompleted()) {
+      showToast('error', `还有 ${followUpItems.filter((i) => !i.completed).length} 项追问未完成`);
       return;
     }
     if (!allMaterialsUploaded) {
-      showToast('error', '请先上传所有需要的材料');
+      const missingLabels = materialsRequired.filter((m) => !m.uploaded).map((m) => m.label);
+      showToast('error', `缺少材料：${missingLabels.join('、')}`);
       return;
     }
     adjustConclusion(order.id, adjustedResult, user.id, adjustReason || undefined);

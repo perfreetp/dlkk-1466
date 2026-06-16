@@ -83,11 +83,13 @@ export function checkCanBook(
     return { canBook: false, reasons };
   }
 
-  if (conclusion.finalResult === 'absolute_contraindication' || conclusion.result === 'absolute_contraindication') {
+  const finalResult = conclusion.finalResult || conclusion.result;
+
+  if (finalResult === 'absolute_contraindication') {
     reasons.push('筛查结论为绝对禁忌，不可预约');
   }
 
-  if (conclusion.result === 'rejected') {
+  if (finalResult === 'rejected' || conclusion.result === 'rejected') {
     reasons.push('申请单已被退回，不可预约');
   }
 

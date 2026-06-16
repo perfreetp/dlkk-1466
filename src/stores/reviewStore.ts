@@ -111,7 +111,7 @@ const useReviewStore = create<ReviewStore>()((set, get) => ({
 
   isAllFollowUpCompleted: () => {
     const { followUpItems } = get();
-    if (followUpItems.length === 0) return false;
+    if (followUpItems.length === 0) return true;
     return followUpItems.every((item) => item.completed);
   },
 }));

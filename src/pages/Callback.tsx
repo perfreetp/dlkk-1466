@@ -19,8 +19,9 @@ import {
   Home,
 } from 'lucide-react';
 import usePatientStore from '@/stores/patientStore';
+import useAuthStore from '@/stores/authStore';
 import { BODY_PART_LABELS } from '@/types';
-import { rejectionReasonTemplates, formatDate, rejectionRecords } from '@/data/mockData';
+import { rejectionReasonTemplates, formatDate } from '@/data/mockData';
 import type { RejectionReasonTemplate, RejectionRecord } from '@/types';
 
 type ReasonCategory = 'absolute' | 'material' | 'clinical';
@@ -45,7 +46,8 @@ export default function Callback() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
 
-  const { setCurrentPatientAndOrder, currentPatient, currentOrder } = usePatientStore();
+  const { setCurrentPatientAndOrder, currentPatient, currentOrder, saveRejectionRecord, getRejectionRecord, updateRejectionCallbackStatus } = usePatientStore();
+  const { user } = useAuthStore();
 
   const [activeCategory, setActiveCategory] = useState<ReasonCategory>('absolute');
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -76,9 +78,14 @@ export default function Callback() {
           setActiveCategory(tpl.category);
           setSelectedTemplate(tpl.code);
         }
+      } else {
+        setCallbackStatus('pending');
+        setReasonText('');
+        setAdditionalNote('');
+        setSelectedTemplate(null);
       }
     }
-  }, [currentOrder]);
+  }, [currentOrder, getRejectionRecord]);
 
   const patient = currentPatient;
   const order = currentOrder;
@@ -96,7 +103,7 @@ export default function Callback() {
       items.push({
         id: 'current',
         type: 'current',
-        time: new Date().toISOString(),
+        time: record?.rejectedAt || new Date().toISOString(),
         sender: callbackStatus === 'sent' ? '您（影像科）' : '本次提交（待发送）',
         content: reasonText || '（请填写退回原因）',
         isCurrent: true,
@@ -111,26 +118,12 @@ export default function Callback() {
           content: record.doctorReply,
         });
       }
-
-      if (record) {
-        items.push({
-          id: 'history',
-          type: 'history',
-          time: record.rejectedAt,
-          sender: '您（影像科）',
-          content: `首次退回：${record.reasonText}${record.additionalNote ? `\n补充说明：${record.additionalNote}` : ''}`,
-        });
-      }
     }
 
     return items.sort(
       (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime(),
     );
-  }, [order, reasonText, callbackStatus, patient]);
-
-  function getRejectionRecord(orderId: string): RejectionRecord | undefined {
-    return rejectionRecords?.find((r) => r.orderId === orderId);
-  }
+  }, [order, reasonText, callbackStatus, patient, getRejectionRecord]);
 
   const showToast = (type: 'success' | 'error', message: string) => {
     setToast({ type, message });
@@ -172,7 +165,19 @@ export default function Callback() {
       showToast('error', '请填写退回原因');
       return;
     }
+    if (!order || !user) return;
+
+    const reasonCode = selectedTemplate || 'CUSTOM';
+    saveRejectionRecord({
+      orderId: order.id,
+      reasonCode,
+      reasonText,
+      additionalNote,
+      rejectedBy: user.id,
+      callbackStatus: 'sent',
+    });
     setCallbackStatus('sent');
+    updateRejectionCallbackStatus(order.id, 'sent');
     showToast('success', '✓ 已发送，医生将在24小时内回复');
   };
 

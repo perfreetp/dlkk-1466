@@ -82,7 +82,7 @@ export default function Scheduling() {
     confirmAppointment,
     checkBookingAbility,
   } = useSchedulingStore();
-  const { conclusion } = useScreeningStore();
+  const screeningState = useScreeningStore();
   const { user } = useAuthStore();
 
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
@@ -122,10 +122,14 @@ export default function Scheduling() {
   useEffect(() => {
     if (currentOrder) {
       setFilters({ isEnhanced: currentOrder.isEnhanced });
+      selectSlot(null);
       const ability = checkBookingAbility(currentOrder.id);
       setBookingAbility(ability);
+    } else {
+      selectSlot(null);
+      setBookingAbility({ canBook: true });
     }
-  }, [currentOrder, checkBookingAbility]);
+  }, [currentOrder, checkBookingAbility, selectSlot]);
 
   const [selectedMachines, setSelectedMachines] = useState<string[]>([]);
   const [selectedCoils, setSelectedCoils] = useState<string[]>([]);
@@ -157,6 +161,12 @@ export default function Scheduling() {
 
   const patient = currentPatient;
   const order = currentOrder;
+
+  const conclusion = useMemo(() => {
+    if (!order) return null;
+    const c = screeningState.conclusion;
+    return c && c.orderId === order.id ? c : null;
+  }, [order, screeningState.conclusion]);
 
   const missingMaterials = useMemo(() => {
     if (!conclusion?.materialsRequired) return [];

@@ -118,8 +118,39 @@ export default function Screening() {
     }
   };
 
+  const isQuestionnaireComplete = (): { complete: boolean; missing: string[] } => {
+    if (!order) return { complete: false, missing: [] };
+    const missing: string[] = [];
+    for (const q of currentQuestions) {
+      const val = getAnswerValue(answers, order.id, q.id);
+      if (val === undefined || val === null || val === '') {
+        missing.push(q.title);
+      }
+    }
+    if (order.isEnhanced) {
+      const egfr = getAnswerValue(answers, order.id, 'renal_function_egfr');
+      if (egfr === undefined || egfr === null || String(egfr).trim() === '') {
+        const alreadyHas = missing.some((t) => t.includes('eGFR') || t.includes('肾功能'));
+        if (!alreadyHas) missing.push('增强扫描必填：近期肾功能 eGFR 数值');
+      }
+      const iodine = getAnswerValue(answers, order.id, 'iodine_allergy_history');
+      if (iodine === undefined || iodine === null) {
+        const alreadyHas = missing.some((t) => t.includes('碘对比剂') || t.includes('碘过敏'));
+        if (!alreadyHas) missing.push('增强扫描必填：碘对比剂过敏史');
+      }
+    }
+    return { complete: missing.length === 0, missing };
+  };
+
+  const completeness = isQuestionnaireComplete();
+  const canSubmit = completeness.complete;
+
   const handleSubmit = () => {
     if (!order) return;
+    if (!canSubmit) {
+      alert(`请先完成以下必填项：\n${completeness.missing.map((t, i) => `${i + 1}. ${t}`).join('\n')}`);
+      return;
+    }
     submitScreening(order.id, order.bodyPart, order.isEnhanced);
     if (patientId) {
       navigate(`/patients/${patientId}/review`);
@@ -478,13 +509,28 @@ export default function Screening() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-white/95 backdrop-blur-sm shadow-lg">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-end gap-3">
-          <button type="button" className="btn-danger" onClick={handleReset}>
-            重置问卷
-          </button>
-          <button type="button" className="btn-primary" onClick={handleSubmit}>
-            提交筛查结论 → 进入人工复核
-          </button>
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-3">
+          {!canSubmit && (
+            <div className="flex items-center gap-2 text-risk-warning text-sm">
+              <AlertCircle className="w-4 h-4" />
+              <span>还有 {completeness.missing.length} 项必填内容未完成</span>
+            </div>
+          )}
+          {canSubmit && <div />}
+          <div className="flex items-center gap-3">
+            <button type="button" className="btn-danger" onClick={handleReset}>
+              重置问卷
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              style={{ opacity: canSubmit ? 1 : 0.5, cursor: canSubmit ? 'pointer' : 'not-allowed' }}
+            >
+              提交筛查结论 → 进入人工复核
+            </button>
+          </div>
         </div>
       </div>
     </div>

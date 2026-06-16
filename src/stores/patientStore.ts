@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Patient, ExaminationOrder } from '@/types';
-import { MOCK_PATIENTS, MOCK_ORDERS } from '@/data/mockData';
+import type { Patient, ExaminationOrder, RejectionRecord, CallbackStatus } from '@/types';
+import { MOCK_PATIENTS, MOCK_ORDERS, rejectionRecords as MOCK_REJECTION_RECORDS } from '@/data/mockData';
 
 function uuid(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -14,6 +14,7 @@ function uuid(): string {
 interface PatientState {
   patients: Patient[];
   orders: ExaminationOrder[];
+  rejectionRecords: RejectionRecord[];
   currentPatient: Patient | null;
   currentOrder: ExaminationOrder | null;
 }
@@ -28,6 +29,9 @@ interface PatientActions {
   findPatientsByKeyword: (keyword: string) => Patient[];
   getOrdersByPatient: (patientId: string) => ExaminationOrder[];
   setCurrentPatientAndOrder: (patientId: string, orderId?: string) => void;
+  saveRejectionRecord: (record: Omit<RejectionRecord, 'id' | 'rejectedAt'>) => RejectionRecord;
+  getRejectionRecord: (orderId: string) => RejectionRecord | undefined;
+  updateRejectionCallbackStatus: (orderId: string, status: CallbackStatus) => void;
 }
 
 type PatientStore = PatientState & PatientActions;
@@ -37,13 +41,17 @@ const usePatientStore = create<PatientStore>()(
     (set, get) => ({
       patients: [],
       orders: [],
+      rejectionRecords: [],
       currentPatient: null,
       currentOrder: null,
 
       loadMockData: () => {
-        const { patients, orders } = get();
+        const { patients, orders, rejectionRecords } = get();
         if (patients.length === 0 && orders.length === 0) {
           set({ patients: MOCK_PATIENTS, orders: MOCK_ORDERS });
+        }
+        if (rejectionRecords.length === 0 && MOCK_REJECTION_RECORDS && MOCK_REJECTION_RECORDS.length > 0) {
+          set({ rejectionRecords: MOCK_REJECTION_RECORDS });
         }
       },
 
@@ -103,6 +111,37 @@ const usePatientStore = create<PatientStore>()(
           order = patientOrders.length > 0 ? patientOrders[0] : null;
         }
         set({ currentPatient: patient, currentOrder: order });
+      },
+
+      saveRejectionRecord: (record) => {
+        const newRecord: RejectionRecord = {
+          ...record,
+          id: uuid(),
+          rejectedAt: new Date().toISOString(),
+        };
+        set((state) => {
+          const existingIdx = state.rejectionRecords.findIndex((r) => r.orderId === record.orderId);
+          if (existingIdx >= 0) {
+            const updated = [...state.rejectionRecords];
+            updated[existingIdx] = { ...newRecord, id: state.rejectionRecords[existingIdx].id, rejectedAt: state.rejectionRecords[existingIdx].rejectedAt };
+            return { rejectionRecords: updated };
+          }
+          return { rejectionRecords: [...state.rejectionRecords, newRecord] };
+        });
+        return { ...newRecord };
+      },
+
+      getRejectionRecord: (orderId) => {
+        const { rejectionRecords } = get();
+        return rejectionRecords.find((r) => r.orderId === orderId);
+      },
+
+      updateRejectionCallbackStatus: (orderId, status) => {
+        set((state) => ({
+          rejectionRecords: state.rejectionRecords.map((r) =>
+            r.orderId === orderId ? { ...r, callbackStatus: status } : r,
+          ),
+        }));
       },
     }),
     {

@@ -124,10 +124,14 @@ const useSchedulingStore = create<SchedulingStore>()(
         }
 
         const screeningState = useScreeningStore.getState();
-        const conclusion = screeningState?.conclusion;
-        const finalResult = conclusion?.finalResult || conclusion?.result;
+        const allConclusions = screeningState?.conclusion;
+        const conclusion = allConclusions && allConclusions.orderId === orderId ? allConclusions : undefined;
 
-        return checkCanBook(order, finalResult);
+        const result = checkCanBook(order, conclusion);
+        return {
+          canBook: result.canBook,
+          reason: result.reasons.length > 0 ? result.reasons.join('；') : undefined,
+        };
       },
     }),
     {

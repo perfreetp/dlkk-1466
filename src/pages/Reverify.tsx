@@ -139,13 +139,24 @@ export default function Reverify() {
     }
     if (recentSurgery === 'yes' && hasImplants === 'yes') {
       showToast(
-        'warning',
-        '患者有新植入物，建议先联系医师评估后再确认',
+        'error',
+        '近期手术且存在体内植入物，禁止直接通过！请改为「异常处理」或联系医师评估后退回复查',
+      );
+      return;
+    }
+    if (implantDetails === 'yes') {
+      showToast(
+        'error',
+        '登记了新的体内植入物，禁止直接核验通过！请改为「异常处理」或退回评估',
       );
       return;
     }
     if (showFastingCheck && fastingConfirmed === 'no') {
-      showToast('warning', '患者未按要求禁食禁水，需严格遵守否则应改期');
+      const typeText = order?.isEnhanced ? '增强检查' : '腹部/盆腔检查';
+      showToast(
+        'error',
+        `${typeText}必须严格禁食禁水，患者未遵守要求，本次不能进行检查，请改期`,
+      );
       return;
     }
     setReverifyStatus('passed');
