@@ -1,0 +1,197 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 212 76% 49%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 212 76% 49%;
+
+    --radius: 0.375rem;
+
+    font-family: "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 212 76% 55%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 212 76% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .status-badge {
+    @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium;
+  }
+  .status-pending {
+    @apply bg-medical-50 text-medical-700;
+  }
+  .status-absolute {
+    @apply bg-risk-absolute/10 text-risk-absolute;
+  }
+  .status-warning {
+    @apply bg-risk-warning/10 text-risk-warning;
+  }
+  .status-safe {
+    @apply bg-risk-safe/10 text-risk-safe;
+  }
+  .status-rejected {
+    @apply bg-gray-100 text-gray-600;
+  }
+  .data-card {
+    @apply rounded-lg border border-border bg-card p-4 shadow-card transition-all duration-200 hover:shadow-card-hover;
+  }
+  .data-stat {
+    @apply flex flex-col gap-1;
+  }
+  .data-stat-value {
+    @apply font-mono text-3xl font-bold tracking-tight;
+  }
+  .data-stat-label {
+    @apply text-sm text-muted-foreground;
+  }
+  .sidebar-item {
+    @apply flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-150 hover:bg-medical-50 hover:text-medical-700;
+  }
+  .sidebar-item-active {
+    @apply bg-medical-500 text-white hover:bg-medical-600 hover:text-white;
+  }
+  .form-label {
+    @apply mb-1.5 block text-sm font-medium text-foreground;
+  }
+  .form-input {
+    @apply flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .form-select {
+    @apply flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-medical-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-all hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground shadow-sm transition-all hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .question-card {
+    @apply rounded-lg border border-border bg-white p-4 transition-all duration-200;
+  }
+  .question-card-risk {
+    @apply border-risk-absolute/30 bg-risk-absolute/5 shadow-risk-high;
+  }
+  .slot-cell {
+    @apply flex h-14 cursor-pointer items-center justify-center rounded border text-xs font-medium transition-all duration-150;
+  }
+  .slot-available {
+    @apply border-risk-safe/30 bg-slot-available text-risk-safe hover:bg-risk-safe/20;
+  }
+  .slot-booked {
+    @apply border-gray-200 bg-slot-booked text-gray-500;
+  }
+  .slot-full {
+    @apply border-risk-absolute/20 bg-slot-full text-risk-absolute/70;
+  }
+  .slot-selected {
+    @apply border-medical-500 bg-slot-selected text-medical-700 ring-2 ring-medical-500/30;
+  }
+  .table-th {
+    @apply border-b border-border bg-muted/50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+  .table-td {
+    @apply border-b border-border px-4 py-3 text-sm;
+  }
+  .script-bubble {
+    @apply rounded-lg bg-medical-50 p-3 text-sm text-medical-800 border-l-4 border-medical-500;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
