@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar,
   Filter,
@@ -67,6 +67,7 @@ function formatDateDisplay(dateStr: string): string {
 
 export default function Scheduling() {
   const { patientId } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const { setCurrentPatientAndOrder, currentPatient, currentOrder } = usePatientStore();
@@ -104,9 +105,10 @@ export default function Scheduling() {
 
   useEffect(() => {
     if (patientId) {
-      setCurrentPatientAndOrder(patientId);
+      const orderId = searchParams.get('orderId') || undefined;
+      setCurrentPatientAndOrder(patientId, orderId);
     }
-  }, [patientId, setCurrentPatientAndOrder]);
+  }, [patientId, searchParams, setCurrentPatientAndOrder]);
 
   useEffect(() => {
     loadSlotsAndMachines();
@@ -164,9 +166,8 @@ export default function Scheduling() {
 
   const conclusion = useMemo(() => {
     if (!order) return null;
-    const c = screeningState.conclusion;
-    return c && c.orderId === order.id ? c : null;
-  }, [order, screeningState.conclusion]);
+    return screeningState.conclusions.find((c) => c.orderId === order.id) || null;
+  }, [order, screeningState.conclusions]);
 
   const missingMaterials = useMemo(() => {
     if (!conclusion?.materialsRequired) return [];

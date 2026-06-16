@@ -124,8 +124,7 @@ const useSchedulingStore = create<SchedulingStore>()(
         }
 
         const screeningState = useScreeningStore.getState();
-        const allConclusions = screeningState?.conclusion;
-        const conclusion = allConclusions && allConclusions.orderId === orderId ? allConclusions : undefined;
+        const conclusion = screeningState.getConclusionByOrderId(orderId);
 
         const result = checkCanBook(order, conclusion);
         return {

@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Printer,
@@ -50,18 +50,26 @@ function generateVerifyNo(): string {
 
 export default function Print() {
   const { patientId } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const { setCurrentPatientAndOrder, currentPatient, currentOrder } = usePatientStore();
   const { slots, machines, appointments, loadSlotsAndMachines } = useSchedulingStore();
-  const { conclusion, riskFlags } = useScreeningStore();
+  const screeningState = useScreeningStore();
+  const { riskFlags } = screeningState;
+
+  const conclusion = useMemo(() => {
+    if (!currentOrder) return null;
+    return screeningState.conclusions.find((c) => c.orderId === currentOrder.id) || null;
+  }, [currentOrder, screeningState.conclusions]);
 
   useEffect(() => {
     if (patientId) {
-      setCurrentPatientAndOrder(patientId);
+      const orderId = searchParams.get('orderId') || undefined;
+      setCurrentPatientAndOrder(patientId, orderId);
     }
     loadSlotsAndMachines();
-  }, [patientId, setCurrentPatientAndOrder, loadSlotsAndMachines]);
+  }, [patientId, searchParams, setCurrentPatientAndOrder, loadSlotsAndMachines]);
 
   const patient = currentPatient;
   const order = currentOrder;

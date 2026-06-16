@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeftRight,
   MessageCircle,
@@ -44,6 +44,7 @@ interface TimelineItem {
 
 export default function Callback() {
   const { patientId } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const { setCurrentPatientAndOrder, currentPatient, currentOrder, saveRejectionRecord, getRejectionRecord, updateRejectionCallbackStatus } = usePatientStore();
@@ -62,9 +63,10 @@ export default function Callback() {
 
   useEffect(() => {
     if (patientId) {
-      setCurrentPatientAndOrder(patientId);
+      const orderId = searchParams.get('orderId') || undefined;
+      setCurrentPatientAndOrder(patientId, orderId);
     }
-  }, [patientId, setCurrentPatientAndOrder]);
+  }, [patientId, searchParams, setCurrentPatientAndOrder]);
 
   useEffect(() => {
     if (currentOrder) {

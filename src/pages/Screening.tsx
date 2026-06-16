@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   AlertTriangle,
@@ -43,9 +43,11 @@ function getSubQuestions(question: Question, answer: boolean | string | undefine
 
 export default function Screening() {
   const { patientId } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const { setCurrentPatientAndOrder, currentPatient, currentOrder } = usePatientStore();
+  const screeningState = useScreeningStore();
   const {
     initScreening,
     currentQuestions,
@@ -54,16 +56,16 @@ export default function Screening() {
     submitScreening,
     answers,
     riskFlags,
-    conclusion,
-  } = useScreeningStore();
+  } = screeningState;
 
   const [subAnswersState, setSubAnswersState] = useState<Record<string, Record<string, boolean | string>>>({});
 
   useEffect(() => {
     if (patientId) {
-      setCurrentPatientAndOrder(patientId);
+      const orderId = searchParams.get('orderId') || undefined;
+      setCurrentPatientAndOrder(patientId, orderId);
     }
-  }, [patientId, setCurrentPatientAndOrder]);
+  }, [patientId, searchParams, setCurrentPatientAndOrder]);
 
   useEffect(() => {
     if (currentOrder) {
@@ -73,6 +75,11 @@ export default function Screening() {
 
   const order = currentOrder;
   const patient = currentPatient;
+
+  const conclusion = useMemo(() => {
+    if (!order) return undefined;
+    return screeningState.conclusions.find((c) => c.orderId === order.id);
+  }, [order, screeningState.conclusions]);
 
   const orderRiskFlags = order ? riskFlags.filter((r) => r.orderId === order.id) : [];
 

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   AlertTriangle,
@@ -30,10 +30,11 @@ type TabKey = 'followup' | 'materials' | 'conclusion';
 
 export default function Review() {
   const { patientId } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const { setCurrentPatientAndOrder, currentPatient, currentOrder } = usePatientStore();
-  const { conclusion } = useScreeningStore();
+  const screeningState = useScreeningStore();
   const {
     followUpItems,
     loadReviewTasks,
@@ -41,6 +42,7 @@ export default function Review() {
     approveMaterial,
     adjustConclusion,
     isAllFollowUpCompleted,
+    isRiskFollowUpCompleted,
   } = useReviewStore();
   const { user } = useAuthStore();
 
@@ -59,11 +61,20 @@ export default function Review() {
 
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  const order = currentOrder;
+  const patient = currentPatient;
+
+  const conclusion = useMemo(() => {
+    if (!order) return undefined;
+    return screeningState.conclusions.find((c) => c.orderId === order.id);
+  }, [order, screeningState.conclusions]);
+
   useEffect(() => {
     if (patientId) {
-      setCurrentPatientAndOrder(patientId);
+      const orderId = searchParams.get('orderId') || undefined;
+      setCurrentPatientAndOrder(patientId, orderId);
     }
-  }, [patientId, setCurrentPatientAndOrder]);
+  }, [patientId, searchParams, setCurrentPatientAndOrder]);
 
   useEffect(() => {
     if (currentOrder) {
@@ -104,9 +115,6 @@ export default function Review() {
     setTimeout(() => setToast(null), 2500);
   };
 
-  const order = currentOrder;
-  const patient = currentPatient;
-
   const materialsRequired = conclusion?.materialsRequired || [];
   const allMaterialsUploaded =
     materialsRequired.length === 0 || materialsRequired.every((m) => m.uploaded);
@@ -139,9 +147,10 @@ export default function Review() {
   };
 
   const handleMaterialUpload = (type: MaterialType) => {
+    if (!order) return;
     const mockFileName = `${type}_${Date.now()}.pdf`;
     setMaterialFileNames((prev) => ({ ...prev, [type]: mockFileName }));
-    approveMaterial(type);
+    approveMaterial(order.id, type);
     showToast('success', '材料上传审核通过');
   };
 
@@ -151,8 +160,9 @@ export default function Review() {
 
   const handleFinalReview = () => {
     if (!order || !patientId || !user) return;
-    if (followUpItems.length > 0 && !isAllFollowUpCompleted()) {
-      showToast('error', `还有 ${followUpItems.filter((i) => !i.completed).length} 项追问未完成`);
+    const riskStatus = isRiskFollowUpCompleted();
+    if (!riskStatus.completed) {
+      showToast('error', `还有 ${riskStatus.unfinishedCount} 项风险追问未完成，请先完成风险相关的电话随访`);
       return;
     }
     if (!allMaterialsUploaded) {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   ShieldAlert,
@@ -26,6 +26,7 @@ type YesNo = 'yes' | 'no' | null;
 
 export default function Reverify() {
   const { patientId } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const { setCurrentPatientAndOrder, currentPatient, currentOrder, updateOrderStatus } =
@@ -50,10 +51,11 @@ export default function Reverify() {
 
   useEffect(() => {
     if (patientId) {
-      setCurrentPatientAndOrder(patientId);
+      const orderId = searchParams.get('orderId') || undefined;
+      setCurrentPatientAndOrder(patientId, orderId);
     }
     loadSlotsAndMachines();
-  }, [patientId, setCurrentPatientAndOrder, loadSlotsAndMachines]);
+  }, [patientId, searchParams, setCurrentPatientAndOrder, loadSlotsAndMachines]);
 
   const patient = currentPatient;
   const order = currentOrder;

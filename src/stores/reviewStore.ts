@@ -17,7 +17,7 @@ interface ReviewState {
 interface ReviewActions {
   loadReviewTasks: (orderId: string) => void;
   toggleFollowUpItem: (itemId: string, answer?: string) => void;
-  approveMaterial: (type: MaterialType) => void;
+  approveMaterial: (orderId: string, type: MaterialType) => void;
   adjustConclusion: (
     orderId: string,
     newResult: ConclusionResult,
@@ -25,6 +25,7 @@ interface ReviewActions {
     reason?: string,
   ) => void;
   isAllFollowUpCompleted: () => boolean;
+  isRiskFollowUpCompleted: () => { completed: boolean; unfinishedCount: number };
 }
 
 type ReviewStore = ReviewState & ReviewActions;
@@ -34,12 +35,12 @@ const useReviewStore = create<ReviewStore>()((set, get) => ({
   conclusionOverride: null,
 
   loadReviewTasks: (orderId) => {
-    const { riskFlags, conclusion } = useScreeningStore.getState();
+    const { riskFlags, getConclusionByOrderId } = useScreeningStore.getState();
     const orderRiskFlags = riskFlags.filter((r) => r.orderId === orderId);
-    const orderConclusion = conclusion?.orderId === orderId ? conclusion : null;
+    const orderConclusion = getConclusionByOrderId(orderId) || null;
 
     const tasks = generateFollowUpTasks(orderId, orderRiskFlags, orderConclusion);
-    set({ followUpItems: tasks });
+    set({ followUpItems: tasks, conclusionOverride: null });
   },
 
   toggleFollowUpItem: (itemId, answer) => {
@@ -59,8 +60,9 @@ const useReviewStore = create<ReviewStore>()((set, get) => ({
     }));
   },
 
-  approveMaterial: (type) => {
-    const { conclusion } = useScreeningStore.getState();
+  approveMaterial: (orderId, type) => {
+    const screening = useScreeningStore.getState();
+    const conclusion = screening.getConclusionByOrderId(orderId);
     if (!conclusion?.materialsRequired) return;
 
     const updatedMaterials = conclusion.materialsRequired.map((m) =>
@@ -73,17 +75,23 @@ const useReviewStore = create<ReviewStore>()((set, get) => ({
         : m,
     );
 
+    const updatedConclusion = {
+      ...conclusion,
+      materialsRequired: updatedMaterials,
+    };
+
+    const prev = useScreeningStore.getState();
     useScreeningStore.setState({
-      conclusion: {
-        ...conclusion,
-        materialsRequired: updatedMaterials,
-      },
+      conclusions: prev.conclusions.map((c) =>
+        c.orderId === orderId ? updatedConclusion : c,
+      ),
     });
   },
 
   adjustConclusion: (orderId, newResult, reviewerId, reason) => {
-    const { conclusion } = useScreeningStore.getState();
-    if (!conclusion || conclusion.orderId !== orderId) return;
+    const screening = useScreeningStore.getState();
+    const conclusion = screening.getConclusionByOrderId(orderId);
+    if (!conclusion) return;
 
     const updatedConclusion = {
       ...conclusion,
@@ -93,7 +101,12 @@ const useReviewStore = create<ReviewStore>()((set, get) => ({
       reasonSummary: reason ? `${conclusion.reasonSummary} | 复核说明: ${reason}` : conclusion.reasonSummary,
     };
 
-    useScreeningStore.setState({ conclusion: updatedConclusion });
+    const prev = useScreeningStore.getState();
+    useScreeningStore.setState({
+      conclusions: prev.conclusions.map((c) =>
+        c.orderId === orderId ? updatedConclusion : c,
+      ),
+    });
     set({ conclusionOverride: newResult });
 
     const { updateOrderStatus } = usePatientStore.getState();
@@ -113,6 +126,16 @@ const useReviewStore = create<ReviewStore>()((set, get) => ({
     const { followUpItems } = get();
     if (followUpItems.length === 0) return true;
     return followUpItems.every((item) => item.completed);
+  },
+
+  isRiskFollowUpCompleted: () => {
+    const { followUpItems } = get();
+    const riskItems = followUpItems.filter(
+      (item) => item.riskType !== 'general' && item.riskType !== 'material',
+    );
+    if (riskItems.length === 0) return { completed: true, unfinishedCount: 0 };
+    const unfinished = riskItems.filter((item) => !item.completed).length;
+    return { completed: unfinished === 0, unfinishedCount: unfinished };
   },
 }));
 

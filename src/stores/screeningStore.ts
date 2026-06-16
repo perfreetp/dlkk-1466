@@ -9,13 +9,14 @@ import type {
 } from '@/types';
 import { getQuestionnaire } from '@/data/questionnaires';
 import { runScreeningEngine } from '@/lib/screeningEngine';
+import { screeningConclusions as MOCK_CONCLUSIONS, riskFlags as MOCK_RISK_FLAGS } from '@/data/mockData';
 import usePatientStore from './patientStore';
 
 interface ScreeningState {
   answers: ScreeningAnswer[];
   currentQuestions: Question[];
   riskFlags: RiskFlag[];
-  conclusion: ScreeningConclusion | null;
+  conclusions: ScreeningConclusion[];
 }
 
 interface ScreeningActions {
@@ -27,6 +28,8 @@ interface ScreeningActions {
     subAnswers?: Record<string, boolean | string>,
   ) => void;
   submitScreening: (orderId: string, bodyPart: BodyPart, isEnhanced: boolean) => void;
+  getConclusionByOrderId: (orderId: string) => ScreeningConclusion | undefined;
+  loadMockData: () => void;
   resetScreening: () => void;
 }
 
@@ -38,7 +41,21 @@ const useScreeningStore = create<ScreeningStore>()(
       answers: [],
       currentQuestions: [],
       riskFlags: [],
-      conclusion: null,
+      conclusions: [],
+
+      loadMockData: () => {
+        const { riskFlags, conclusions } = get();
+        if (riskFlags.length === 0 && MOCK_RISK_FLAGS && MOCK_RISK_FLAGS.length > 0) {
+          set({ riskFlags: MOCK_RISK_FLAGS });
+        }
+        if (conclusions.length === 0 && MOCK_CONCLUSIONS && MOCK_CONCLUSIONS.length > 0) {
+          set({ conclusions: MOCK_CONCLUSIONS });
+        }
+      },
+
+      getConclusionByOrderId: (orderId) => {
+        return get().conclusions.find((c) => c.orderId === orderId);
+      },
 
       initScreening: (orderId, bodyPart, isEnhanced) => {
         const questions = getQuestionnaire(bodyPart, isEnhanced);
@@ -46,7 +63,6 @@ const useScreeningStore = create<ScreeningStore>()(
           currentQuestions: questions,
           answers: get().answers.filter((a) => a.orderId === orderId),
           riskFlags: get().riskFlags.filter((r) => r.orderId === orderId),
-          conclusion: get().conclusion?.orderId === orderId ? get().conclusion : null,
         });
       },
 
@@ -110,9 +126,10 @@ const useScreeningStore = create<ScreeningStore>()(
 
         set((state) => {
           const otherFlags = state.riskFlags.filter((r) => r.orderId !== orderId);
+          const otherConclusions = state.conclusions.filter((c) => c.orderId !== orderId);
           return {
             riskFlags: [...otherFlags, ...newFlags],
-            conclusion: newConclusion,
+            conclusions: [...otherConclusions, newConclusion],
           };
         });
 
@@ -128,12 +145,19 @@ const useScreeningStore = create<ScreeningStore>()(
           answers: [],
           currentQuestions: [],
           riskFlags: [],
-          conclusion: null,
+          conclusions: [],
         });
       },
     }),
     {
       name: 'screening-storage',
+      onRehydrateStorage: () => {
+        return (state) => {
+          if (state) {
+            state.loadMockData();
+          }
+        };
+      },
     },
   ),
 );

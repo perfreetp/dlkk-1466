@@ -23,10 +23,8 @@ const useStatisticsStore = create<StatisticsStore>()((set) => ({
 
   loadStatistics: (startDate, endDate) => {
     const { orders } = usePatientStore.getState();
-    const { riskFlags, conclusion } = useScreeningStore.getState();
+    const { riskFlags, conclusions } = useScreeningStore.getState();
     const { slots, appointments } = useSchedulingStore.getState();
-
-    const conclusions = conclusion ? [conclusion] : [];
 
     const stats = calculateStatistics(
       orders,
