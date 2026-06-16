@@ -108,6 +108,7 @@ export default function Reverify() {
     if (recentSurgery === null) return false;
     if (recentSurgery === 'yes') {
       if (!surgeryType.trim() || !surgeryDate.trim()) return false;
+      if (hasImplants === null) return false;
     }
     if (implantDetails === null) return false;
     if (implantDetails === 'yes' && !implantDescription.trim()) return false;
@@ -117,6 +118,7 @@ export default function Reverify() {
     recentSurgery,
     surgeryType,
     surgeryDate,
+    hasImplants,
     implantDetails,
     implantDescription,
     showFastingCheck,
@@ -137,6 +139,10 @@ export default function Reverify() {
   };
 
   const handlePass = () => {
+    if (recentSurgery === 'yes' && hasImplants === null) {
+      showToast('error', '请补完「是否有体内植入物」选项，选择了新手术后必须确认有无植入物才能通过');
+      return;
+    }
     if (!isFormComplete) {
       showToast('error', '请完成所有必填核验项目');
       return;

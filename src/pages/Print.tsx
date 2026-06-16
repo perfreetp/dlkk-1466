@@ -55,7 +55,7 @@ export default function Print() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const { setCurrentPatientAndOrder, currentPatient, currentOrder } = usePatientStore();
+  const { setCurrentPatientAndOrder, currentPatient, currentOrder, updateOrderStatus } = usePatientStore();
   const { slots, machines, appointments, loadSlotsAndMachines } = useSchedulingStore();
   const screeningState = useScreeningStore();
   const { riskFlags } = screeningState;
@@ -101,6 +101,21 @@ export default function Print() {
   const materials = conclusion?.materialsRequired || [];
   const verifyNo = useMemo(() => generateVerifyNo(), []);
   const printDate = formatDate(new Date().toISOString());
+
+  const [hasPrinted, setHasPrinted] = useState(false);
+
+  const handlePrintDone = () => {
+    if (!order) return;
+    if (order.status === 'scheduled') {
+      updateOrderStatus(order.id, 'reverify_pending');
+    }
+    setHasPrinted(true);
+  };
+
+  const goToReverify = () => {
+    if (!order || !patientId) return;
+    navigate(`/patients/${patientId}/reverify?orderId=${order.id}`);
+  };
 
   if (!patient || !order) {
     return (
@@ -153,6 +168,39 @@ export default function Print() {
               <Printer className="w-4 h-4" />
               打印核验单
             </button>
+            {order.status === 'scheduled' && (
+              <>
+                {!hasPrinted ? (
+                  <button
+                    type="button"
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors shadow-sm"
+                    onClick={handlePrintDone}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    打印完成，进入二次核验
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors shadow-sm"
+                    onClick={goToReverify}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    前往二次核验 →
+                  </button>
+                )}
+              </>
+            )}
+            {(order.status === 'reverify_pending' || order.status === 'completed') && (
+              <button
+                type="button"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors shadow-sm"
+                onClick={goToReverify}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                查看二次核验
+              </button>
+            )}
           </div>
         </div>
       </div>

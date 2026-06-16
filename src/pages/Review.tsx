@@ -38,13 +38,12 @@ export default function Review() {
   const { setCurrentPatientAndOrder, currentPatient, currentOrder } = usePatientStore();
   const screeningState = useScreeningStore();
   const {
-    followUpItems,
     loadReviewTasks,
     toggleFollowUpItem,
     approveMaterial,
     adjustConclusion,
-    isAllFollowUpCompleted,
     isRiskFollowUpCompleted,
+    getFollowUpItems,
   } = useReviewStore();
   const { user } = useAuthStore();
 
@@ -71,6 +70,11 @@ export default function Review() {
     return screeningState.conclusions.find((c) => c.orderId === order.id);
   }, [order, screeningState.conclusions]);
 
+  const followUpItems = useMemo(() => {
+    if (!order) return [];
+    return getFollowUpItems(order.id);
+  }, [order, getFollowUpItems, screeningState.conclusions]);
+
   useEffect(() => {
     if (patientId) {
       const orderId = searchParams.get('orderId') || undefined;
@@ -81,28 +85,17 @@ export default function Review() {
   useEffect(() => {
     if (currentOrder) {
       loadReviewTasks(currentOrder.id);
-      const initialExpanded: Record<string, boolean> = {};
-      const initialAnswers: Record<string, string> = {};
-      for (const item of followUpItems) {
-        initialExpanded[item.id] = !item.completed;
-        if (item.answer) initialAnswers[item.id] = item.answer;
-      }
-      if (Object.keys(initialExpanded).length === 0) {
-        setTimeout(() => {
-          const items = useReviewStore.getState().followUpItems;
-          const exp: Record<string, boolean> = {};
-          const ans: Record<string, string> = {};
-          for (const it of items) {
-            exp[it.id] = !it.completed;
-            if (it.answer) ans[it.id] = it.answer;
-          }
-          setExpandedItems(exp);
-          setItemAnswers(ans);
-        }, 100);
-      } else {
-        setExpandedItems(initialExpanded);
-        setItemAnswers(initialAnswers);
-      }
+      setTimeout(() => {
+        const items = useReviewStore.getState().getFollowUpItems(currentOrder.id);
+        const exp: Record<string, boolean> = {};
+        const ans: Record<string, string> = {};
+        for (const it of items) {
+          exp[it.id] = !it.completed;
+          if (it.answer) ans[it.id] = it.answer;
+        }
+        setExpandedItems(exp);
+        setItemAnswers(ans);
+      }, 0);
     }
   }, [currentOrder, loadReviewTasks]);
 
@@ -144,7 +137,8 @@ export default function Review() {
   };
 
   const handleMarkComplete = (itemId: string) => {
-    toggleFollowUpItem(itemId, itemAnswers[itemId]);
+    if (!order) return;
+    toggleFollowUpItem(order.id, itemId, itemAnswers[itemId]);
     setExpandedItems((prev) => ({ ...prev, [itemId]: false }));
   };
 
@@ -162,7 +156,7 @@ export default function Review() {
 
   const handleFinalReview = () => {
     if (!order || !patientId || !user) return;
-    const riskStatus = isRiskFollowUpCompleted();
+    const riskStatus = isRiskFollowUpCompleted(order.id);
     if (!riskStatus.completed) {
       showToast('error', `还有 ${riskStatus.unfinishedCount} 项风险追问未完成，请先完成风险相关的电话随访`);
       return;

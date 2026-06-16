@@ -10,13 +10,14 @@ import usePatientStore from './patientStore';
 import useAuthStore from './authStore';
 
 interface ReviewState {
-  followUpItems: FollowUpItem[];
-  conclusionOverride: ConclusionResult | null;
+  followUpItemsByOrder: Record<string, FollowUpItem[]>;
+  conclusionOverrideByOrder: Record<string, ConclusionResult>;
+  currentOrderId: string | null;
 }
 
 interface ReviewActions {
   loadReviewTasks: (orderId: string) => void;
-  toggleFollowUpItem: (itemId: string, answer?: string) => void;
+  toggleFollowUpItem: (orderId: string, itemId: string, answer?: string) => void;
   approveMaterial: (orderId: string, type: MaterialType) => void;
   adjustConclusion: (
     orderId: string,
@@ -24,29 +25,45 @@ interface ReviewActions {
     reviewerId: string,
     reason?: string,
   ) => void;
-  isAllFollowUpCompleted: () => boolean;
-  isRiskFollowUpCompleted: () => { completed: boolean; unfinishedCount: number };
+  isAllFollowUpCompleted: (orderId: string) => boolean;
+  isRiskFollowUpCompleted: (orderId: string) => { completed: boolean; unfinishedCount: number };
+  getFollowUpItems: (orderId: string) => FollowUpItem[];
 }
 
 type ReviewStore = ReviewState & ReviewActions;
 
 const useReviewStore = create<ReviewStore>()((set, get) => ({
-  followUpItems: [],
-  conclusionOverride: null,
+  followUpItemsByOrder: {},
+  conclusionOverrideByOrder: {},
+  currentOrderId: null,
 
   loadReviewTasks: (orderId) => {
     const { riskFlags, getConclusionByOrderId } = useScreeningStore.getState();
     const orderRiskFlags = riskFlags.filter((r) => r.orderId === orderId);
     const orderConclusion = getConclusionByOrderId(orderId) || null;
 
-    const tasks = generateFollowUpTasks(orderId, orderRiskFlags, orderConclusion);
-    set({ followUpItems: tasks, conclusionOverride: null });
+    const existing = get().followUpItemsByOrder[orderId];
+    const freshTasks = generateFollowUpTasks(orderId, orderRiskFlags, orderConclusion);
+
+    let tasks = freshTasks;
+    if (existing && existing.length > 0) {
+      tasks = freshTasks.map((fresh) => {
+        const prev = existing.find((e) => e.id === fresh.id);
+        return prev && prev.completed ? { ...fresh, completed: true, answer: prev.answer, completedAt: prev.completedAt, completedBy: prev.completedBy } : fresh;
+      });
+    }
+
+    set((state) => ({
+      currentOrderId: orderId,
+      followUpItemsByOrder: { ...state.followUpItemsByOrder, [orderId]: tasks },
+    }));
   },
 
-  toggleFollowUpItem: (itemId, answer) => {
+  toggleFollowUpItem: (orderId, itemId, answer) => {
     const user = useAuthStore.getState().user;
-    set((state) => ({
-      followUpItems: state.followUpItems.map((item) =>
+    set((state) => {
+      const items = state.followUpItemsByOrder[orderId] || [];
+      const updated = items.map((item) =>
         item.id === itemId
           ? {
               ...item,
@@ -56,8 +73,15 @@ const useReviewStore = create<ReviewStore>()((set, get) => ({
               completedBy: !item.completed ? user?.id : undefined,
             }
           : item,
-      ),
-    }));
+      );
+      return {
+        followUpItemsByOrder: { ...state.followUpItemsByOrder, [orderId]: updated },
+      };
+    });
+  },
+
+  getFollowUpItems: (orderId) => {
+    return get().followUpItemsByOrder[orderId] || [];
   },
 
   approveMaterial: (orderId, type) => {
@@ -107,7 +131,9 @@ const useReviewStore = create<ReviewStore>()((set, get) => ({
         c.orderId === orderId ? updatedConclusion : c,
       ),
     });
-    set({ conclusionOverride: newResult });
+    set((state) => ({
+      conclusionOverrideByOrder: { ...state.conclusionOverrideByOrder, [orderId]: newResult },
+    }));
 
     const { updateOrderStatus } = usePatientStore.getState();
     if (newResult === 'rejected') {
@@ -122,15 +148,15 @@ const useReviewStore = create<ReviewStore>()((set, get) => ({
     }
   },
 
-  isAllFollowUpCompleted: () => {
-    const { followUpItems } = get();
-    if (followUpItems.length === 0) return true;
-    return followUpItems.every((item) => item.completed);
+  isAllFollowUpCompleted: (orderId) => {
+    const items = get().followUpItemsByOrder[orderId] || [];
+    if (items.length === 0) return true;
+    return items.every((item) => item.completed);
   },
 
-  isRiskFollowUpCompleted: () => {
-    const { followUpItems } = get();
-    const riskItems = followUpItems.filter(
+  isRiskFollowUpCompleted: (orderId) => {
+    const items = get().followUpItemsByOrder[orderId] || [];
+    const riskItems = items.filter(
       (item) => item.riskType !== 'general' && item.riskType !== 'material',
     );
     if (riskItems.length === 0) return { completed: true, unfinishedCount: 0 };

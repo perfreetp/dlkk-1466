@@ -29,7 +29,11 @@ const STATUS_FILTER_OPTIONS: Array<{ value: OrderStatus | 'all'; label: string }
   { value: 'pending_screening', label: '待筛查' },
   { value: 'screening_done', label: '筛查完成' },
   { value: 'review_pending', label: '待复核' },
+  { value: 'review_done', label: '复核完成' },
+  { value: 'scheduling_pending', label: '待排班' },
   { value: 'scheduled', label: '已预约' },
+  { value: 'reverify_pending', label: '待二次核验' },
+  { value: 'completed', label: '已完成' },
   { value: 'rejected', label: '已退回' },
 ];
 
@@ -56,49 +60,29 @@ export default function PatientList() {
     setCurrentPage(1);
   }, [statusFilter]);
 
-  const filteredPatients = useMemo(() => {
+  const filteredPatientsMap = useMemo(() => {
     const matchedPatients = searchKeyword.trim()
       ? findPatientsByKeyword(searchKeyword)
       : patients;
-
-    if (statusFilter === 'all') {
-      return matchedPatients;
-    }
-
-    const ordersWithStatus = orders.filter((o) => o.status === statusFilter);
-    const patientIdsWithStatus = new Set(ordersWithStatus.map((o) => o.patientId));
-    return matchedPatients.filter((p) => patientIdsWithStatus.has(p.id));
-  }, [patients, orders, searchKeyword, statusFilter, findPatientsByKeyword]);
-
-  const patientOrdersMap = useMemo(() => {
-    const map = new Map<string, ExaminationOrder[]>();
-    for (const order of orders) {
-      const existing = map.get(order.patientId) || [];
-      map.set(order.patientId, [...existing, order]);
+    const map = new Map<string, Patient>();
+    for (const p of matchedPatients) {
+      map.set(p.id, p);
     }
     return map;
-  }, [orders]);
+  }, [patients, searchKeyword, findPatientsByKeyword]);
 
   const tableData = useMemo(() => {
     const data: Array<{ patient: Patient; order: ExaminationOrder }> = [];
-    for (const patient of filteredPatients) {
-      const patientOrders = patientOrdersMap.get(patient.id) || [];
-      const sortedOrders = [...patientOrders].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
-      if (statusFilter !== 'all') {
-        const matchedOrder = sortedOrders.find((o) => o.status === statusFilter);
-        if (matchedOrder) {
-          data.push({ patient, order: matchedOrder });
-        }
-      } else if (sortedOrders.length > 0) {
-        data.push({ patient, order: sortedOrders[0] });
-      }
+    for (const order of orders) {
+      const patient = filteredPatientsMap.get(order.patientId);
+      if (!patient) continue;
+      if (statusFilter !== 'all' && order.status !== statusFilter) continue;
+      data.push({ patient, order });
     }
     return data.sort(
       (a, b) => new Date(b.order.createdAt).getTime() - new Date(a.order.createdAt).getTime(),
     );
-  }, [filteredPatients, patientOrdersMap, statusFilter]);
+  }, [orders, filteredPatientsMap, statusFilter]);
 
   const totalCount = tableData.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
