@@ -30,6 +30,8 @@ import {
 } from '@/types';
 import { RISK_RULES } from '@/data/riskRules';
 import type { MaterialType, RiskFlagType } from '@/types';
+import OrderSwitcher from '@/components/OrderSwitcher';
+import OrderTimeline from '@/components/OrderTimeline';
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -123,7 +125,7 @@ export default function Print() {
             type="button"
             className="btn-ghost"
             onClick={() => {
-              if (patientId) navigate(`/patients/${patientId}/scheduling`);
+              if (patientId && order) navigate(`/patients/${patientId}/scheduling?orderId=${order.id}`);
             }}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -152,6 +154,13 @@ export default function Print() {
               打印核验单
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white border-b border-border shadow-sm no-print">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
+          <OrderTimeline order={order} compact />
+          <OrderSwitcher currentOrder={order} compact />
         </div>
       </div>
 

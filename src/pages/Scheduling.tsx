@@ -31,6 +31,8 @@ import {
   MATERIAL_TYPE_LABELS,
 } from '@/types';
 import type { MRISlot, MaterialType } from '@/types';
+import OrderSwitcher from '@/components/OrderSwitcher';
+import OrderTimeline from '@/components/OrderTimeline';
 
 const COIL_OPTIONS = [
   { value: '头线圈', label: 'Head 头部' },
@@ -251,7 +253,7 @@ export default function Scheduling() {
     confirmAppointment(order.id, selectedSlot.id, patient.id, user.id);
     setShowConfirmModal(false);
     if (patientId) {
-      navigate(`/patients/${patientId}/print`);
+      navigate(`/patients/${patientId}/print?orderId=${order.id}`);
     }
   };
 
@@ -355,6 +357,13 @@ export default function Scheduling() {
         </div>
       </div>
 
+      <div className="bg-white border-b border-border shadow-sm no-print">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
+          <OrderTimeline order={order} compact />
+          <OrderSwitcher currentOrder={order} compact />
+        </div>
+      </div>
+
       {!bookingAbility.canBook && (
         <div className="bg-risk-absolute/10 border-b border-risk-absolute/30">
           <div className="max-w-7xl mx-auto px-6 py-4">
@@ -371,7 +380,7 @@ export default function Scheduling() {
                   type="button"
                   className="btn-danger"
                   onClick={() => {
-                    if (patientId) navigate(`/patients/${patientId}/callback`);
+                    if (patientId && order) navigate(`/patients/${patientId}/callback?orderId=${order.id}`);
                   }}
                 >
                   <ArrowLeftRight className="w-4 h-4" />
@@ -400,7 +409,7 @@ export default function Scheduling() {
                   type="button"
                   className="btn-secondary bg-white border-risk-absolute/30 text-risk-absolute hover:bg-risk-absolute/5"
                   onClick={() => {
-                    if (patientId) navigate(`/patients/${patientId}/review`);
+                    if (patientId && order) navigate(`/patients/${patientId}/review?orderId=${order.id}`);
                   }}
                 >
                   前往补齐材料

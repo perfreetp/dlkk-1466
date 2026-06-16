@@ -111,86 +111,82 @@ export default function PatientList() {
   const handleActionClick = (patient: Patient, order: ExaminationOrder) => {
     switch (order.status) {
       case 'pending_screening':
+      case 'screening_done':
         navigate(`/patients/${patient.id}/screening?orderId=${order.id}`);
         break;
       case 'review_pending':
+      case 'review_done':
         navigate(`/patients/${patient.id}/review?orderId=${order.id}`);
         break;
       case 'scheduling_pending':
+      case 'scheduled':
         navigate(`/patients/${patient.id}/scheduling?orderId=${order.id}`);
         break;
+      case 'reverify_pending':
+      case 'completed':
+        navigate(`/patients/${patient.id}/reverify?orderId=${order.id}`);
+        break;
+      case 'rejected':
+        navigate(`/patients/${patient.id}/callback?orderId=${order.id}`);
+        break;
       default:
-        navigate(`/patients/${patient.id}`);
+        navigate(`/patients/${patient.id}/scheduling?orderId=${order.id}`);
         break;
     }
   };
 
   const getActionButton = (patient: Patient, order: ExaminationOrder) => {
+    const btnBase = (bg: string, label: string) => (
+      <button
+        onClick={() => handleActionClick(patient, order)}
+        className="text-xs"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.375rem',
+          borderRadius: '0.375rem',
+          padding: '0.4rem 0.875rem',
+          fontSize: '0.75rem',
+          fontWeight: '500',
+          backgroundColor: bg,
+          color: 'white',
+          boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+          transition: 'all 0.2s',
+        }}
+      >
+        {label}
+      </button>
+    );
     switch (order.status) {
       case 'pending_screening':
-        return (
-          <button
-            onClick={() => handleActionClick(patient, order)}
-            className="btn-primary text-xs"
-          >
-            去筛查
-          </button>
-        );
+      case 'screening_done':
+        return btnBase('#1E6FD9', '筛查问卷');
       case 'review_pending':
-        return (
-          <button
-            onClick={() => handleActionClick(patient, order)}
-            className="text-xs"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              borderRadius: '0.375rem',
-              padding: '0.5rem 1rem',
-              fontSize: '0.75rem',
-              fontWeight: '500',
-              backgroundColor: '#F59E0B',
-              color: 'white',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.2s',
-            }}
-          >
-            去复核
-          </button>
-        );
+      case 'review_done':
+        return btnBase('#F59E0B', '人工复核');
       case 'scheduling_pending':
+        return btnBase('#22C55E', '预约排班');
+      case 'scheduled':
         return (
-          <button
-            onClick={() => handleActionClick(patient, order)}
-            className="text-xs"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              borderRadius: '0.375rem',
-              padding: '0.5rem 1rem',
-              fontSize: '0.75rem',
-              fontWeight: '500',
-              backgroundColor: '#22C55E',
-              color: 'white',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.2s',
-            }}
-          >
-            去排班
-          </button>
+          <div className="flex items-center gap-1.5">
+            {btnBase('#22C55E', '查看预约')}
+            <button
+              onClick={() => navigate(`/patients/${patient.id}/print?orderId=${order.id}`)}
+              className="btn-ghost text-xs px-2"
+            >
+              打印
+            </button>
+          </div>
         );
+      case 'reverify_pending':
+        return btnBase('#8B5CF6', '二次核验');
+      case 'completed':
+        return btnBase('#10B981', '核验记录');
+      case 'rejected':
+        return btnBase('#EF4444', '结果回传');
       default:
-        return (
-          <button
-            onClick={() => handleActionClick(patient, order)}
-            className="btn-ghost text-xs"
-          >
-            详情
-          </button>
-        );
+        return btnBase('#1E6FD9', '详情');
     }
   };
 

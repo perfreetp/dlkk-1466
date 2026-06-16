@@ -21,6 +21,8 @@ import usePatientStore from '@/stores/patientStore';
 import useSchedulingStore from '@/stores/schedulingStore';
 import useAuthStore from '@/stores/authStore';
 import { BODY_PART_LABELS } from '@/types';
+import OrderSwitcher from '@/components/OrderSwitcher';
+import OrderTimeline from '@/components/OrderTimeline';
 
 type YesNo = 'yes' | 'no' | null;
 
@@ -172,7 +174,7 @@ export default function Reverify() {
   };
 
   const handleLater = () => {
-    if (patientId) navigate(`/patients/${patientId}/scheduling`);
+    if (patientId && order) navigate(`/patients/${patientId}/scheduling?orderId=${order.id}`);
   };
 
   if (!patient || !order) {
@@ -229,6 +231,13 @@ export default function Reverify() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white border-b border-border shadow-sm no-print">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
+          <OrderTimeline order={order} compact />
+          <OrderSwitcher currentOrder={order} compact />
         </div>
       </div>
 

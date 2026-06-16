@@ -23,6 +23,8 @@ import useAuthStore from '@/stores/authStore';
 import { BODY_PART_LABELS } from '@/types';
 import { rejectionReasonTemplates, formatDate } from '@/data/mockData';
 import type { RejectionReasonTemplate, RejectionRecord } from '@/types';
+import OrderSwitcher from '@/components/OrderSwitcher';
+import OrderTimeline from '@/components/OrderTimeline';
 
 type ReasonCategory = 'absolute' | 'material' | 'clinical';
 
@@ -247,6 +249,13 @@ export default function Callback() {
               <div>年龄：{patient.age}岁</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white border-b border-border shadow-sm no-print">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
+          <OrderTimeline order={order} compact />
+          <OrderSwitcher currentOrder={order} compact />
         </div>
       </div>
 

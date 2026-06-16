@@ -15,6 +15,8 @@ import useScreeningStore from '@/stores/screeningStore';
 import { BODY_PART_LABELS, RISK_FLAG_LABELS, RISK_LEVEL_LABELS } from '@/types';
 import { RISK_RULES } from '@/data/riskRules';
 import type { Question, ScreeningAnswer } from '@/types';
+import OrderSwitcher from '@/components/OrderSwitcher';
+import OrderTimeline from '@/components/OrderTimeline';
 
 function getAnswerValue(answers: ScreeningAnswer[], orderId: string, questionId: string): boolean | string | undefined {
   const found = answers.find((a) => a.orderId === orderId && a.questionId === questionId);
@@ -160,7 +162,7 @@ export default function Screening() {
     }
     submitScreening(order.id, order.bodyPart, order.isEnhanced);
     if (patientId) {
-      navigate(`/patients/${patientId}/review`);
+      navigate(`/patients/${patientId}/review?orderId=${order.id}`);
     }
   };
 
@@ -287,6 +289,13 @@ export default function Screening() {
               <div>年龄：{patient.age}岁</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white border-b border-border shadow-sm no-print">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
+          <OrderTimeline order={order} compact />
+          <OrderSwitcher currentOrder={order} compact />
         </div>
       </div>
 

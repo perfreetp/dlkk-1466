@@ -25,6 +25,8 @@ import {
 } from '@/types';
 import { rejectionReasonTemplates, formatDate } from '@/data/mockData';
 import type { ConclusionResult, MaterialType, RiskFlagType } from '@/types';
+import OrderSwitcher from '@/components/OrderSwitcher';
+import OrderTimeline from '@/components/OrderTimeline';
 
 type TabKey = 'followup' | 'materials' | 'conclusion';
 
@@ -171,7 +173,7 @@ export default function Review() {
       return;
     }
     adjustConclusion(order.id, adjustedResult, user.id, adjustReason || undefined);
-    navigate(`/patients/${patientId}/scheduling`);
+    navigate(`/patients/${patientId}/scheduling?orderId=${order.id}`);
   };
 
   const handleConfirmReject = () => {
@@ -182,7 +184,7 @@ export default function Review() {
     }
     adjustConclusion(order.id, 'rejected', user.id, `${selectedRejectReason} ${rejectAdditionalNote}`);
     setShowRejectModal(false);
-    navigate(`/patients/${patientId}/callback`);
+    navigate(`/patients/${patientId}/callback?orderId=${order.id}`);
   };
 
   if (!patient || !order) {
@@ -242,8 +244,19 @@ export default function Review() {
         </div>
       </div>
 
+      <div className="bg-white border-b border-border shadow-sm no-print">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
+          <OrderTimeline order={order} compact />
+          <OrderSwitcher currentOrder={order} compact />
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="grid grid-cols-3 gap-6">
+          <div className="col-span-1 space-y-4 order-first">
+            <OrderTimeline order={order} />
+            <OrderSwitcher currentOrder={order} />
+          </div>
           <div className="col-span-2">
             <div className="data-card p-0 overflow-hidden">
               <div className="flex border-b border-border">
